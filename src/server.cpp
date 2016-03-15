@@ -16,13 +16,13 @@ bool test_commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg);
 void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg, SIMPLE_MSG_TYPE msg_t);
 
 static TcpConfig my_conf;
-static vector<TcpConfig> others;
+static vector<TcpConfig> other_servers;
 static string server_file;
 
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        Utils::print_error("usage: ./server <number>[1-3]");
+        Utils::print_error("usage: ./server <server_number>[1-3]");
         exit(EXIT_FAILURE);
     }
 
@@ -33,12 +33,12 @@ int main(int argc, char* argv[])
     Registry::instance().add_file(server_file);
 
     // read config
-    Config config(CONFIG_FILE);
+    Config config(SERVER_CONFIG_FILE);
     try {
         config.create();
 
         int server_num = Utils::str_to_int(argv[1]);
-        if (server_num > 3)
+        if (server_num > NUM_OF_SERVERS)
             throw Exception("Undefined server number");
         for (int i = 1; i <= NUM_OF_SERVERS; ++i) {
             TcpConfig cfg = config.getTcpConfig(i);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
                 my_conf = cfg;
                 continue;
             }
-            others.push_back(cfg);
+            other_servers.push_back(cfg);
         }
 
     } catch (...) {
@@ -150,8 +150,8 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
 {
     c_data->msg_t = msg_t;
     
-    for (int i = 0; i < (int)others.size(); ++i) {
-        TcpConfig cfg = others.at(i);
+    for (int i = 0; i < (int)other_servers.size(); ++i) {
+        TcpConfig cfg = other_servers.at(i);
         TcpSocket client(cfg.port, cfg.host);
         try {
             client.connect();

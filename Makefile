@@ -39,6 +39,7 @@ setup:
 	mkdir -p bin
 	mkdir -p obj
 	cp server.config bin/
+	cp client.config bin/
 
 .PHONY: clean
 clean:
