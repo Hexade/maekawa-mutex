@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     client_sock_cb.subscribe(&on_client_data, &client_data);
 
     // start TCP server
-    TcpServer server(my_conf.port, &client_sock_cb);
+    TcpServer server(my_conf.port, &client_sock_cb, sizeof(SimpleMessage));
     try {
         cout << "Started listening on " << my_conf.host
             << ":" << my_conf.port;
