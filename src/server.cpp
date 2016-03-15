@@ -9,14 +9,15 @@
 
 using namespace std;
 
-void on_client_data(SockData* c_data, TcpSocket* c_sock);
-void commit(SockData* c_data, ReplyMessage& r_msg);
-bool test_commit(SockData* c_data, ReplyMessage& r_msg);
-bool test_commit_peers(SockData* c_data, ReplyMessage& r_msg);
-void commit_peers(SockData* c_data, ReplyMessage& r_msg, MSG_TYPE msg_t);
+void on_client_data(void* data, TcpSocket* c_sock);
+void commit(SimpleMessage* c_data, ReplyMessage* r_msg);
+bool test_commit(SimpleMessage* c_data, ReplyMessage* r_msg);
+bool test_commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg);
+void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg, SIMPLE_MSG_TYPE msg_t);
 
 static TcpConfig my_conf;
 static vector<TcpConfig> others;
+static string server_file;
 
 int main(int argc, char* argv[])
 {
@@ -24,6 +25,12 @@ int main(int argc, char* argv[])
         Utils::print_error("usage: ./server <number>[1-3]");
         exit(EXIT_FAILURE);
     }
+
+    // set server file name
+    server_file = "out_server";
+    server_file.append(argv[1]);
+    server_file.append(".txt");
+    Registry::instance().add_file(server_file);
 
     // read config
     Config config(CONFIG_FILE);
@@ -68,27 +75,32 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void on_client_data(SockData* c_data, TcpSocket* c_sock)
+void on_client_data(void* data, TcpSocket* c_sock)
 {
-    ReplyMessage r_msg;
+    SimpleMessage* c_data = (SimpleMessage*)data;
+
+    // set up server reply
+    SimpleMessage reply_msg;
+    reply_msg.msg_t = RESULT;
+    ReplyMessage* r_msg = &reply_msg.payload.reply_m;
 
     switch (c_data->msg_t) {
 
-        case CLIENT_TO_SERVER:
+        case DATA:
             if (test_commit(c_data, r_msg)
-                && test_commit_peers(c_data, r_msg)) {
+                && test_commit_peers(c_data, reply_msg)) {
                 // all good, commit peers and myself
-                commit_peers(c_data, r_msg,
-                    SERVER_TO_SERVER_COMMIT);
+                commit_peers(c_data, reply_msg,
+                    COMMIT);
                 commit(c_data, r_msg);
             }
             break;
 
-        case SERVER_TO_SERVER_TEST_COMMIT:
+        case TEST_COMMIT:
             test_commit(c_data, r_msg);
             break;
 
-        case SERVER_TO_SERVER_COMMIT:
+        case COMMIT:
             commit(c_data, r_msg);
             break;
 
@@ -96,95 +108,46 @@ void on_client_data(SockData* c_data, TcpSocket* c_sock)
             break;
     }  
 
-    r_msg.server_num = my_conf.number;
-    c_sock->send(&r_msg, sizeof(ReplyMessage));
+    r_msg->server_num = my_conf.number;
+    c_sock->send(&reply_msg, sizeof(SimpleMessage));
 }
 
-void commit(SockData* c_data, ReplyMessage& r_msg) 
+void commit(SimpleMessage* c_data, ReplyMessage* r_msg) 
+{
+    Registry& reg = Registry::instance();
+
+    string result = reg.open_append_close(server_file,
+                        c_data->payload.write_m.to_string());
+
+    r_msg->result = true;
+    Utils::copy_str_to_arr(result, r_msg->message, MAX_WRITE_LEN);
+}
+
+bool test_commit(SimpleMessage* c_data, ReplyMessage* r_msg) 
 {
     Registry& reg = Registry::instance();
 
     string result;
-    switch(c_data->cmd_t) {
-        case E_CMD_CREATE:
-            result = reg.add_file(c_data->filename);
-            break;
-        case E_CMD_SEEK:
-            result = reg.seek_file(c_data->filename, c_data->input.number);
-            break;
-        case E_CMD_READ:
-            result = reg.read_file(c_data->filename, c_data->input.number);
-            break;
-        case E_CMD_WRITE:
-            result = reg.write_file(c_data->filename, c_data->input.data); 
-            break;
-        case E_CMD_DELETE:
-            result = reg.remove_file(c_data->filename);
-        case E_CMD_TERMINATE:
-            reg.clear_seek_positions();
-        default:
-            break;
-    }
-    r_msg.result = true;
-    Utils::copy_str_to_arr(result, r_msg.message, MAX_WRITE_LEN);
-}
-
-bool test_commit(SockData* c_data, ReplyMessage& r_msg) 
-{
-    Registry& reg = Registry::instance();
-
-    bool success = false;;
+    r_msg->result = reg.test_open_append_close(server_file, result); 
     
-    std::string result;
-    switch(c_data->cmd_t) {
-        case E_CMD_CREATE:
-            success = reg.test_add_file(c_data->filename, result);
-            break;
-        case E_CMD_SEEK:
-            success = reg.test_seek_file(c_data->filename,
-                c_data->input.number, result);
-            break;
-        case E_CMD_READ:
-            success = reg.test_read_file(c_data->filename,
-                c_data->input.number, result);
-            break;
-        case E_CMD_WRITE:
-            success = reg.test_write_file(c_data->filename, result); 
-            break;
-        case E_CMD_DELETE:
-            success = reg.test_remove_file(c_data->filename, result);
-            break;
-        case E_CMD_TERMINATE:
-            // terminate should be always successful
-            success = true;
-            break;
-        default:
-            break;
-    }
-    r_msg.result = success;
-    Utils::copy_str_to_arr(result, r_msg.message, MAX_WRITE_LEN);
-
-    return success;
+    Utils::copy_str_to_arr(result, r_msg->message, MAX_WRITE_LEN);
+    return r_msg->result;
 }
 
-bool test_commit_peers(SockData* c_data, ReplyMessage& r_msg)
+bool test_commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg)
 {
     // assume success
-    r_msg.result = true;
+    ReplyMessage* r_msg = &reply_msg.payload.reply_m;
+    r_msg->result = true;
 
-    commit_peers(c_data, r_msg, SERVER_TO_SERVER_TEST_COMMIT);
+    commit_peers(c_data, reply_msg, TEST_COMMIT);
 
-    return r_msg.result;
+    return r_msg->result;
 }
 
-void commit_peers(SockData* c_data, ReplyMessage& r_msg,
-    MSG_TYPE msg_t)
+void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
+    SIMPLE_MSG_TYPE msg_t)
 {
-    // no need to contact peers for read operation
-    if (c_data->cmd_t == E_CMD_READ ||
-        c_data->cmd_t == E_CMD_TERMINATE)
-        return;
-
     c_data->msg_t = msg_t;
     
     for (int i = 0; i < (int)others.size(); ++i) {
@@ -192,13 +155,14 @@ void commit_peers(SockData* c_data, ReplyMessage& r_msg,
         TcpSocket client(cfg.port, cfg.host);
         try {
             client.connect();
-            client.send(c_data, sizeof(SockData));
-            client.receive(&r_msg, sizeof(ReplyMessage));
+            client.send(c_data, sizeof(SimpleMessage));
+            client.receive(&reply_msg, sizeof(SimpleMessage));
             client.close();
         } catch (Exception ex) {
-            r_msg.result = false;
+            ReplyMessage* r_msg = &reply_msg.payload.reply_m;
+            r_msg->result = false;
             Utils::copy_str_to_arr(FAIL_PEER_COMM, 
-                r_msg.message, MAX_WRITE_LEN);
+                r_msg->message, MAX_WRITE_LEN);
             Utils::print_error(ex.get_message());
             break;
         }

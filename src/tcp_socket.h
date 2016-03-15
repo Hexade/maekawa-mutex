@@ -11,6 +11,7 @@
 #define MAX_WRITE_LEN 512
 #define MAX_DATA_LEN 1024
 #define REQ_QUEUE_SZ 5
+#define HOST_NAME_LEN 50
 
 // command input can be a string or integer
 union CommandInput {
@@ -32,6 +33,24 @@ struct ReplyMessage {
     char message[MAX_WRITE_LEN];
 };
 
+struct WriteMessage {
+    int id;
+    int seq_num;
+    char host_name[HOST_NAME_LEN];
+
+    std::string to_string();
+};
+
+union SimpleMessagePayload {
+    MAEKAWA_MSG_TYPE maekawa_t;
+    WriteMessage write_m;
+    ReplyMessage reply_m;
+};
+
+struct SimpleMessage {
+    SIMPLE_MSG_TYPE msg_t;
+    SimpleMessagePayload payload;
+};
 
 class TcpSocket
 {
@@ -49,7 +68,7 @@ class TcpSocket
         void send(void* data, int size) throw (Exception);
         void send(std::string) throw (Exception);
         void receive(void* data, int size) throw (Exception);
-        void close(void) throw (Exception);
+        void close(void) throw (Exception);        
 
     private:
         std::string host;

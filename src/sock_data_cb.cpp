@@ -1,7 +1,7 @@
 #include "exception.h"
 #include "sock_data_cb.h"
 
-void SockDataCb::subscribe(on_sock_data cb, SockData* data)
+void SockDataCb::subscribe(on_sock_data cb, void* data)
 {
     cb_func = cb;
     sock_data = data;

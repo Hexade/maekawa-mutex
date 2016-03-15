@@ -3,7 +3,7 @@
 
 #include "tcp_socket.h"
 
-typedef void (*on_sock_data)(SockData*, TcpSocket*);
+typedef void (*on_sock_data)(void*, TcpSocket*);
 
 class SockDataCb
 {
@@ -13,11 +13,11 @@ class SockDataCb
         ~SockDataCb()
         { }
 
-        void subscribe(on_sock_data cb, SockData* data);
+        void subscribe(on_sock_data cb, void* data);
 
         void on_data_read(TcpSocket* sock) throw (Exception);
 
-        SockData* sock_data;
+        void* sock_data;
 
     private:
         on_sock_data cb_func;

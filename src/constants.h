@@ -52,7 +52,28 @@ enum MSG_TYPE {
     SERVER_TO_SERVER_COMMIT
 };
 
+enum SIMPLE_MSG_TYPE {
+    DATA,
+    RESULT,
+    TERMINATE,
+    CONTROL,
+    TEST_COMMIT,
+    COMMIT,
+    MAEKAWA 
+};
+
+enum MAEKAWA_MSG_TYPE {
+    REQUEST,
+    REPLY,
+    RELEASE,
+    ENQUIRE,
+    FAIL,
+    YIELD,
+    GRANT
+};
+
 // macros
 #define NUM_OF_SERVERS 3
+#define NUM_OF_CLIENTS 7
 
 #endif
