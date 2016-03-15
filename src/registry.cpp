@@ -103,6 +103,18 @@ std::string Registry::remove_file(std::string filename)
     return filename + FAIL_FILE_NOT_DELETED;
 }
 
+std::string Registry::open_append_close(std::string filename, std::string data)
+{
+    std::ofstream ofs;
+    ofs.open(filename.c_str(),
+            std::ofstream::out | std::ofstream::app);
+    
+    ofs << data << std::endl;
+    ofs.close();
+
+    return filename + INFO_FILE_WRITTEN;
+}
+
 bool Registry::test_add_file(std::string filename, std::string& res)
 {
     if (access(filename.c_str(), F_OK) == 0) {
@@ -166,3 +178,7 @@ bool Registry::test_remove_file(std::string filename, std::string& res)
     return test_write_file(filename, res);
 }
 
+bool Registry::test_open_append_close(std::string filename, std::string& res)
+{
+    return test_write_file(filename, res);
+}

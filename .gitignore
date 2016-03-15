@@ -33,3 +33,5 @@ server
 
 # bin folders
 appspace/
+bin/
+obj/

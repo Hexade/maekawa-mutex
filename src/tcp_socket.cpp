@@ -2,11 +2,22 @@
 
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
+
+#include <sstream>
+
+std::string WriteMessage::to_string()
+{
+    std::stringstream ss;
+
+    ss << "< " << id << ", " << seq_num << ", " << host_name << " >";
+    
+    return ss.str();;
+}
 
 TcpSocket::TcpSocket(int port, std::string host)
 : host(host), port(port)

@@ -24,6 +24,7 @@ class Utils
         static void copy_str_to_arr(std::string str, char* arr, int len);
 
         static void reset_copy_arr(void* dest, void* src, int len);
+
 };
 
 #endif

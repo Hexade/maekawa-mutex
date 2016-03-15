@@ -38,6 +38,7 @@ utils.o:
 setup:
 	mkdir -p bin
 	mkdir -p obj
+	cp server.config bin/
 
 .PHONY: clean
 clean:
