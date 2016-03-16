@@ -1,19 +1,27 @@
 #include "config.h"
 #include "constants.h"
+#include "sock_data_cb.h"
+#include "tcp_server.h"
 #include "tcp_socket.h"
 #include "utils.h"
+
+#include <unistd.h>
 
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
-#include <unistd.h>
+#include <thread>
+
+#define NUM_OF_WRITES 40
 
 using namespace std;
 
 static TcpConfig my_conf;
 static vector<TcpConfig> other_clients;
 
+void run_server(int port);
 void do_terminate(Config& cfg);
+void on_client_data(void* data, TcpSocket* c_sock);
 
 int main(int argc, char* argv[])
 {
@@ -52,6 +60,8 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    thread server_thread(run_server, my_conf.port);
+
     // init socket data
     SimpleMessage send_data;
     send_data.msg_t = DATA;
@@ -63,7 +73,7 @@ int main(int argc, char* argv[])
     srand(time(NULL));
 
     int seq_num = 0;
-    while (true) {
+    while (seq_num < NUM_OF_WRITES) {
         // sleep for random time
         int sleep_mil = (rand() % 40) + 10;
         // sleep microseconds
@@ -92,7 +102,33 @@ int main(int argc, char* argv[])
         seq_num++;
     }
 
+    server_thread.join();
+
     return 0;
+}
+
+void run_server(int port)
+{
+    // init callbacks
+    SimpleMessage client_data;
+    SockDataCb client_sock_cb;
+    client_sock_cb.subscribe(&on_client_data, &client_data);
+
+    // start TCP server
+    TcpServer server(port, &client_sock_cb, sizeof(SimpleMessage));
+    try {
+        cout << "Started listening on port " << port;
+        cout.flush();
+        server.start();
+    } catch (Exception ex) {
+        Utils::print_error("server_main: "
+            + ex.get_message());
+        exit(EXIT_FAILURE);
+    }    
+}
+
+void on_client_data(void* data, TcpSocket* c_sock)
+{
 }
 
 void do_terminate(Config& config)

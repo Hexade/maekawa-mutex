@@ -1,13 +1,13 @@
 all: client server
 
-client: commons client.o
-	g++ -Wall -o bin/client obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/client.o
+client: commons tcp_server.o client.o
+	g++ -Wall -pthread -std=c++11 -o bin/client obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/sock_data_cb.o obj/tcp_server.o obj/client.o
 
 server: commons tcp_server.o registry.o server.o
 	g++ -Wall -o bin/server obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/server.o
     	
 client.o:
-	g++ -Wall -c src/client.cpp -o obj/client.o
+	g++ -Wall -pthread -std=c++11 -c src/client.cpp -o obj/client.o
 
 server.o:
 	g++ -Wall -c src/server.cpp -o obj/server.o
