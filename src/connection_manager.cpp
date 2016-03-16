@@ -15,6 +15,17 @@ void ConnectionManager::connect_all(void)
     }
 }
 
+bool ConnectionManager::connect(int id)
+{
+    for (auto& conn: connections) {
+        if (conn.getId() == id) {
+            conn.connect();
+            return true;
+        }
+    }
+    return false;
+}
+
 void ConnectionManager::close_all(void)
 {
     for (auto& conn: connections) {

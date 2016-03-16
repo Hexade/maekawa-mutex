@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
     Utils::copy_str_to_arr(my_conf.host, wm->host_name, HOST_NAME_LEN);
 
     // create server connections
-    ConnectionManager server_connections(server_config.getAll());
+    ConnectionManager server_connections(server_config.get_all());
     server_connections.connect_all();
 
     // seed for random number

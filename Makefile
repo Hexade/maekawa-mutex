@@ -7,14 +7,14 @@ server: setup bin/server bin/server.config
 bin/client: obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/connection_manager.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/client.o
 	g++ -Wall -pthread -std=c++11 -o bin/client obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/connection_manager.o obj/sock_data_cb.o obj/tcp_server.o obj/client.o
 
-bin/server: obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/server.o
-	g++ -Wall -o bin/server obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/server.o
+bin/server: obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/connection_manager.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/server.o
+	g++ -Wall -std=c++11 -o bin/server obj/exception.o obj/utils.o obj/config.o obj/tcp_socket.o obj/connection_manager.o obj/sock_data_cb.o obj/registry.o obj/tcp_server.o obj/server.o
     	
 obj/client.o: src/client.cpp
 	g++ -Wall -pthread -std=c++11 -c src/client.cpp -o obj/client.o
 
 obj/server.o: src/server.cpp
-	g++ -Wall -c src/server.cpp -o obj/server.o
+	g++ -Wall -std=c++11 -c src/server.cpp -o obj/server.o
 
 obj/tcp_server.o: src/tcp_server.h src/tcp_server.cpp
 	g++ -Wall -c src/tcp_server.cpp -o obj/tcp_server.o

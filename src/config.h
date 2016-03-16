@@ -21,7 +21,7 @@ class Config
         { }
 
         TcpConfig& getTcpConfig(int number);
-        inline std::vector<TcpConfig>& getAll(void)
+        inline std::vector<TcpConfig>& get_all(void)
         { return tcp_configs; }
 
         void create(void);

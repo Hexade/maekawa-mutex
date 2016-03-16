@@ -26,8 +26,11 @@ class ConnectionManager
     public:
         ConnectionManager(std::vector<TcpConfig>& cfgs);
         void connect_all(void);
+        bool connect(int id);
         void close_all(void);
         const Connection* get(int id);
+
+        inline const std::vector<Connection>& get_all() { return connections; }
 
     private:
         std::vector<TcpConfig>& configs;

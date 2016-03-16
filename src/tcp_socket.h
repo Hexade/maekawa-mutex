@@ -68,7 +68,8 @@ class TcpSocket
         int receive(void* data, int size) const throw (Exception);
         void close(void) throw (Exception);
 
-        inline int get_sock_fd() { return sock_fd; }
+        inline bool is_active() const { return sock_fd > -1; }
+        inline int get_sock_fd() const { return sock_fd; }
 
     private:
         std::string host;

@@ -20,7 +20,7 @@ std::string WriteMessage::to_string()
 }
 
 TcpSocket::TcpSocket(int port, std::string host)
-: host(host), port(port)
+: host(host), port(port), sock_fd(-1)
 { }
 
 // destructor
