@@ -25,6 +25,7 @@ class Utils
 
         static void reset_copy_arr(void* dest, void* src, int len);
 
+        static std::vector<int> get_quorum_peer_nums(std::string filename, int client_num);
 };
 
 #endif

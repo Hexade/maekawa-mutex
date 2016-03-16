@@ -33,8 +33,10 @@ void TcpServer::start(void) throw (Exception)
             TcpSocket* socket = &(*it);
 
             // if client socket fd is not set, data is not there on that socket
-            if (!FD_ISSET(socket->get_sock_fd(), &read_fd_set))
+            if (!FD_ISSET(socket->get_sock_fd(), &read_fd_set)) {
+                ++it; 
                 continue;
+            }
         
             int bytes_read = socket->receive(client_data_cb->sock_data, client_data_len);
             if (bytes_read == 0) {
@@ -58,7 +60,7 @@ void TcpServer::start(void) throw (Exception)
             int fd = new_socket.get_sock_fd();
             if (fd > max_fd)
                 max_fd = fd;
-            
+
             FD_SET(fd, &active_fd_set);
             client_sockets.push_back(new_socket);
         }

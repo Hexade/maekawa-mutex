@@ -106,7 +106,7 @@ void TcpSocket::accept(TcpSocket& client_socket) throw (Exception)
 }
 
 // send/write string data to socket
-void TcpSocket::send(std::string data) throw (Exception)
+void TcpSocket::send(std::string data) const throw (Exception)
 {
     // extra space for '\0'
     const int len = data.size() + 1;
@@ -118,7 +118,7 @@ void TcpSocket::send(std::string data) throw (Exception)
 }
 
 // send/write data to socket
-void TcpSocket::send(void* data, int size) throw (Exception)
+void TcpSocket::send(void* data, int size) const throw (Exception)
 {
     int bytes_written = write(sock_fd, data, size);
     if (bytes_written < 0)
@@ -126,7 +126,7 @@ void TcpSocket::send(void* data, int size) throw (Exception)
 }
 
 // receive/read data from socket
-int TcpSocket::receive(void* data, int size) throw (Exception)
+int TcpSocket::receive(void* data, int size) const throw (Exception)
 {
     int bytes_read = read(sock_fd, data, size);
     if (bytes_read < 0)

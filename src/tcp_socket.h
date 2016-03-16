@@ -63,9 +63,9 @@ class TcpSocket
         void bind(void) throw (Exception);
         void listen(int req_q_len) throw (Exception);
         void accept(TcpSocket& client_socket) throw (Exception);
-        void send(void* data, int size) throw (Exception);
-        void send(std::string) throw (Exception);
-        int receive(void* data, int size) throw (Exception);
+        void send(void* data, int size) const throw (Exception);
+        void send(std::string) const throw (Exception);
+        int receive(void* data, int size) const throw (Exception);
         void close(void) throw (Exception);
 
         inline int get_sock_fd() { return sock_fd; }

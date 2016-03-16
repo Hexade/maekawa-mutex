@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <fstream>
 #include <iterator>
 #include <sstream>
 #include <string.h>
@@ -55,5 +56,30 @@ void Utils::reset_copy_arr(void* dest, void* src, int len)
 
     memset(dest, 0, len);
     memcpy(dest, src, len);
+}
+
+std::vector<int> Utils::get_quorum_peer_nums(std::string filename, int client_num)
+{
+    std::ifstream ifs(filename.c_str());
+    if (!ifs.good())
+        throw Exception("Utils::get_quorum: file not found");
+
+    std::vector<int> quorum_peers;
+    std::string line;
+    int line_num = 1;
+    // skip n-1 lines
+    while (line_num < client_num) {
+        std::getline(ifs, line);
+        line_num++;
+    }
+    
+    // read the required line
+    std::getline(ifs, line);
+    std::istringstream iss(line);
+    int peer_num;
+    while (iss >> peer_num) {
+        quorum_peers.push_back(peer_num);
+    }
+    return quorum_peers;
 }
 

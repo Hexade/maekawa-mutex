@@ -1,4 +1,5 @@
 #include "config.h"
+#include "connection_manager.h"
 #include "constants.h"
 #include "sock_data_cb.h"
 #include "tcp_server.h"
@@ -17,8 +18,9 @@
 using namespace std;
 
 static TcpConfig my_conf;
-static vector<TcpConfig> other_clients;
+static vector<TcpConfig> quorum_peers;
 
+bool configure_quorum(int client_num);
 void run_server(int port);
 void do_terminate(Config& cfg);
 void on_client_data(void* data, TcpSocket* c_sock);
@@ -38,28 +40,12 @@ int main(int argc, char* argv[])
         Utils::print_error("unable to read server config");
         exit(EXIT_FAILURE);
     }
-           
-    // read client config
-    Config client_config(CLIENT_CONFIG_FILE);
-    try {
-        client_config.create();
-
-        int client_num = Utils::str_to_int(argv[1]);
-        if (client_num > NUM_OF_CLIENTS)
-            throw Exception("Undefined client number");
-        for (int i = 1; i <= NUM_OF_CLIENTS; ++i) {
-            TcpConfig cfg = client_config.getTcpConfig(i);
-            if (i == client_num){
-                my_conf = cfg;
-                continue;
-            }
-            other_clients.push_back(cfg);
-        }
-    } catch (...) {
-        Utils::print_error("unable to read client config");
+        
+    // configure quorum
+    if (!configure_quorum(Utils::str_to_int(argv[1]))) 
         exit(EXIT_FAILURE);
-    }
 
+    // spawn server thread 
     thread server_thread(run_server, my_conf.port);
 
     // init socket data
@@ -68,6 +54,10 @@ int main(int argc, char* argv[])
     WriteMessage* wm = &send_data.payload.write_m;
     wm->id = my_conf.number;
     Utils::copy_str_to_arr(my_conf.host, wm->host_name, HOST_NAME_LEN);
+
+    // create server connections
+    ConnectionManager server_connections(server_config.getAll());
+    server_connections.connect_all();
 
     // seed for random number
     srand(time(NULL));
@@ -84,27 +74,50 @@ int main(int argc, char* argv[])
         
         // select server by random
         int server_num = (rand() % 3) + 1;
+
         // send request to server
-        TcpConfig cfg = server_config.getTcpConfig(server_num);
-        TcpSocket tcp_client(cfg.port, cfg.host);
+        const Connection* conn = server_connections.get(server_num);
         try {
             SimpleMessage server_reply;
             ReplyMessage* recv_data = &server_reply.payload.reply_m;
-            tcp_client.connect();
-            tcp_client.send(&send_data, sizeof(SimpleMessage));
-            tcp_client.receive(&server_reply, sizeof(SimpleMessage));
+            conn->send(&send_data, sizeof(SimpleMessage));
+            conn->receive(&server_reply, sizeof(SimpleMessage));
             cout << "Server " << recv_data->server_num
                 << " :: " << recv_data->message << endl;
-            tcp_client.close();
         } catch (Exception ex) {    
             Utils::print_error(ex.get_message());
         }
         seq_num++;
     }
 
+    server_connections.close_all();
     server_thread.join();
 
     return 0;
+}
+
+bool configure_quorum(int client_num)
+{
+    bool success = true;
+    Config client_config(CLIENT_CONFIG_FILE);
+    try {
+        client_config.create();
+
+        if (client_num > NUM_OF_CLIENTS)
+            throw Exception("Undefined client number");        
+        my_conf = client_config.getTcpConfig(client_num);
+
+        vector<int> quorum_peer_nums = Utils::get_quorum_peer_nums(
+                                QUORUM_CONFIG_FILE, client_num);
+        for (auto& peer_id: quorum_peer_nums) {
+            quorum_peers.push_back(client_config.getTcpConfig(peer_id));
+        }
+    } catch (...) {
+        Utils::print_error("unable to configure quorum");
+        success = false;
+    }
+   
+    return success;
 }
 
 void run_server(int port)
@@ -117,7 +130,7 @@ void run_server(int port)
     // start TCP server
     TcpServer server(port, &client_sock_cb, sizeof(SimpleMessage));
     try {
-        cout << "Started listening on port " << port;
+        cout << "Started listening on port " << port << endl;
         cout.flush();
         server.start();
     } catch (Exception ex) {
