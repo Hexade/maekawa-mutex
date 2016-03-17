@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
             cout << "Server " << recv_data->server_num
                 << " :: " << recv_data->message << endl;
         } catch (Exception ex) {    
-            Utils::print_error(ex.get_message());
+            Utils::print_error(ex.what());
         }
         seq_num++;
     }
@@ -135,7 +135,7 @@ void run_server(int port)
         server.start();
     } catch (Exception ex) {
         Utils::print_error("server_main: "
-            + ex.get_message());
+            + string(ex.what()));
         exit(EXIT_FAILURE);
     }    
 }

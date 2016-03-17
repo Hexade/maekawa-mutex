@@ -3,7 +3,8 @@
 #include <errno.h>
 #include <string.h>
 
-Exception::Exception(std::string msg, bool useErrno) : message(msg)
+Exception::Exception(std::string msg, bool useErrno) 
+    throw() : message(msg)
 {
     if (useErrno) {
         message.append(": ");
@@ -11,7 +12,7 @@ Exception::Exception(std::string msg, bool useErrno) : message(msg)
     }
 }
 
-std::string Exception::get_message(void)
+const char* Exception::what(void) const throw()
 {
-    return this->message;
+    return this->message.c_str();
 }

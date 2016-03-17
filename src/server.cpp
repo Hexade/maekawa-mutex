@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
         server.start();
     } catch (Exception ex) {
         Utils::print_error("server_main: "
-            + ex.get_message());
+            + string(ex.what()));
         exit(EXIT_FAILURE);
     }
    
@@ -169,7 +169,7 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
             r_msg->result = false;
             Utils::copy_str_to_arr(FAIL_PEER_COMM, 
                 r_msg->message, MAX_WRITE_LEN);
-            Utils::print_error(ex.get_message());
+            Utils::print_error(ex.what());
             break;
         }
     }
