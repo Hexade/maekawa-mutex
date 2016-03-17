@@ -10,7 +10,6 @@
 #define MAX_FILE_NAME_LEN 128
 #define MAX_WRITE_LEN 512
 #define MAX_DATA_LEN 1024
-#define REQ_QUEUE_SZ 5
 #define HOST_NAME_LEN 50
 
 // command input can be a string or integer
@@ -62,13 +61,15 @@ class TcpSocket
         // socket API wrappers
         void connect(void) throw (Exception);
         void bind(void) throw (Exception);
-        void listen(void) throw (Exception);
-        void accept(TcpSocket& client_socket, 
-            int& client_socket_len) throw (Exception);
-        void send(void* data, int size) throw (Exception);
-        void send(std::string) throw (Exception);
-        void receive(void* data, int size) throw (Exception);
-        void close(void) throw (Exception);        
+        void listen(int req_q_len) throw (Exception);
+        void accept(TcpSocket& client_socket) throw (Exception);
+        void send(void* data, int size) const throw (Exception);
+        void send(std::string) const throw (Exception);
+        int receive(void* data, int size) const throw (Exception);
+        void close(void) throw (Exception);
+
+        inline bool is_active() const { return sock_fd > -1; }
+        inline int get_sock_fd() const { return sock_fd; }
 
     private:
         std::string host;

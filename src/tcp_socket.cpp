@@ -20,14 +20,18 @@ std::string WriteMessage::to_string()
 }
 
 TcpSocket::TcpSocket(int port, std::string host)
-: host(host), port(port)
+: host(host), port(port), sock_fd(-1)
 { }
 
-// destructor: close all active socket descriptors
+// destructor
 TcpSocket::~TcpSocket() throw (Exception)
 {
-    if (sock_fd > -1)
-        ::close(sock_fd);
+    // ::close(sock_fd) must be explicitly called by the containing scope
+    // Reason: When you copy a TcpSocket object into a vector
+    // and come out of the scope this destructor is called and
+    // socket gets closed even though the object is there in vector
+    //if (sock_fd > -1)
+    //    ::close(sock_fd);
 }
 
 // initialize socket descriptor and host address
@@ -83,16 +87,15 @@ void TcpSocket::bind(void) throw (Exception)
 }
 
 // listen for requests on the specified ports
-void TcpSocket::listen(void) throw (Exception)
+void TcpSocket::listen(int req_q_len) throw (Exception)
 {
-    int success = ::listen(sock_fd, REQ_QUEUE_SZ);
+    int success = ::listen(sock_fd, req_q_len);
     if (success < 0)
         throw Exception("could not initiate listen", true);
 }
 
 // accept requests from client and create client socket
-void TcpSocket::accept(TcpSocket& client_socket, int& client_socket_len)
-    throw (Exception)
+void TcpSocket::accept(TcpSocket& client_socket) throw (Exception)
 {
     socklen_t client_len = sizeof(client_socket.host_addr);
     client_socket.sock_fd = ::accept(sock_fd, 
@@ -100,11 +103,10 @@ void TcpSocket::accept(TcpSocket& client_socket, int& client_socket_len)
         &client_len);
     if (client_socket.sock_fd < 0)
         throw Exception("could not accept connection request", true);
-    client_socket_len = (int) client_len;
 }
 
 // send/write string data to socket
-void TcpSocket::send(std::string data) throw (Exception)
+void TcpSocket::send(std::string data) const throw (Exception)
 {
     // extra space for '\0'
     const int len = data.size() + 1;
@@ -116,7 +118,7 @@ void TcpSocket::send(std::string data) throw (Exception)
 }
 
 // send/write data to socket
-void TcpSocket::send(void* data, int size) throw (Exception)
+void TcpSocket::send(void* data, int size) const throw (Exception)
 {
     int bytes_written = write(sock_fd, data, size);
     if (bytes_written < 0)
@@ -124,11 +126,12 @@ void TcpSocket::send(void* data, int size) throw (Exception)
 }
 
 // receive/read data from socket
-void TcpSocket::receive(void* data, int size) throw (Exception)
+int TcpSocket::receive(void* data, int size) const throw (Exception)
 {
     int bytes_read = read(sock_fd, data, size);
     if (bytes_read < 0)
-        throw Exception("cannot receive data", true);    
+        throw Exception("cannot receive data", true);
+    return bytes_read;
 }
 
 // close socket descriptor

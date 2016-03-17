@@ -13,7 +13,9 @@ const std::string CMD_TERMINATE = "terminate";
 const std::string CMD_HELP = "help";
 
 // file names
-const std::string CONFIG_FILE= "server.config";
+const std::string SERVER_CONFIG_FILE= "server.config";
+const std::string CLIENT_CONFIG_FILE= "client.config";
+const std::string QUORUM_CONFIG_FILE= "quorum.config";
 
 // reusable phrases
 const std::string ERR_INSUFF_ARGS = "insufficient arguments for this command";

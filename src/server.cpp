@@ -1,4 +1,5 @@
 #include "config.h"
+#include "connection_manager.h"
 #include "constants.h"
 #include "registry.h"
 #include "tcp_server.h"
@@ -16,13 +17,14 @@ bool test_commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg);
 void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg, SIMPLE_MSG_TYPE msg_t);
 
 static TcpConfig my_conf;
-static vector<TcpConfig> others;
+static vector<TcpConfig> other_servers;
 static string server_file;
+static ConnectionManager* server_connections;
 
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        Utils::print_error("usage: ./server <number>[1-3]");
+        Utils::print_error("usage: ./server <server_number>[1-3]");
         exit(EXIT_FAILURE);
     }
 
@@ -33,12 +35,12 @@ int main(int argc, char* argv[])
     Registry::instance().add_file(server_file);
 
     // read config
-    Config config(CONFIG_FILE);
+    Config config(SERVER_CONFIG_FILE);
     try {
         config.create();
 
         int server_num = Utils::str_to_int(argv[1]);
-        if (server_num > 3)
+        if (server_num > NUM_OF_SERVERS)
             throw Exception("Undefined server number");
         for (int i = 1; i <= NUM_OF_SERVERS; ++i) {
             TcpConfig cfg = config.getTcpConfig(i);
@@ -46,21 +48,22 @@ int main(int argc, char* argv[])
                 my_conf = cfg;
                 continue;
             }
-            others.push_back(cfg);
+            other_servers.push_back(cfg);
         }
 
     } catch (...) {
         Utils::print_error("unable to read config");
         exit(EXIT_FAILURE);
     }
+    server_connections = new ConnectionManager(other_servers);
 
     // init callbacks
-    SockData client_data;
+    SimpleMessage client_data;
     SockDataCb client_sock_cb;
     client_sock_cb.subscribe(&on_client_data, &client_data);
 
     // start TCP server
-    TcpServer server(my_conf.port, &client_sock_cb);
+    TcpServer server(my_conf.port, &client_sock_cb, sizeof(SimpleMessage));
     try {
         cout << "Started listening on " << my_conf.host
             << ":" << my_conf.port;
@@ -68,10 +71,12 @@ int main(int argc, char* argv[])
         server.start();
     } catch (Exception ex) {
         Utils::print_error("server_main: "
-            + ex.get_message());
+            + string(ex.what()));
         exit(EXIT_FAILURE);
     }
-    
+   
+    server_connections->close_all();
+    delete server_connections; 
     return 0;
 }
 
@@ -150,20 +155,21 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
 {
     c_data->msg_t = msg_t;
     
-    for (int i = 0; i < (int)others.size(); ++i) {
-        TcpConfig cfg = others.at(i);
-        TcpSocket client(cfg.port, cfg.host);
+    const Connection* conn;
+    for (auto& cfg: other_servers) {
         try {
-            client.connect();
-            client.send(c_data, sizeof(SimpleMessage));
-            client.receive(&reply_msg, sizeof(SimpleMessage));
-            client.close();
+            conn = server_connections->get(cfg.number);
+            if (!conn->is_active())
+                server_connections->connect(cfg.number);
+
+            conn->send(c_data, sizeof(SimpleMessage));
+            conn->receive(&reply_msg, sizeof(SimpleMessage));
         } catch (Exception ex) {
             ReplyMessage* r_msg = &reply_msg.payload.reply_m;
             r_msg->result = false;
             Utils::copy_str_to_arr(FAIL_PEER_COMM, 
                 r_msg->message, MAX_WRITE_LEN);
-            Utils::print_error(ex.get_message());
+            Utils::print_error(ex.what());
             break;
         }
     }
