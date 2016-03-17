@@ -9,11 +9,11 @@
 #include <unistd.h>
 
 // one time initialization of singleton
-Registry* Registry::instance_ = new Registry();
+Registry Registry::instance_;
 
 Registry& Registry::instance()
 {
-    return *instance_;
+    return instance_;
 }
 
 std::string Registry::add_file(std::string filename)

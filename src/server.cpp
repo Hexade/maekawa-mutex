@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 
     // init callbacks
     SimpleMessage client_data;
-    SockDataCb client_sock_cb;
+    CallbackBridge client_sock_cb;
     client_sock_cb.subscribe(&on_client_data, &client_data);
 
     // start TCP server

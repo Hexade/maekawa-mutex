@@ -2,7 +2,7 @@
 #define TCP_SERVER_H
 
 #include "exception.h"
-#include "sock_data_cb.h"
+#include "callback_bridge.h"
 #include "tcp_socket.h"
 
 #include <vector>
@@ -12,7 +12,7 @@
 class TcpServer
 {
     public:
-        TcpServer(int portnum, SockDataCb* cb, int c_data_len)
+        TcpServer(int portnum, CallbackBridge* cb, int c_data_len)
         : main_socket(portnum), client_data_cb(cb),
             client_data_len(c_data_len), max_fd(0)
         { }
@@ -21,7 +21,7 @@ class TcpServer
         
     private:
         TcpSocket main_socket;
-        SockDataCb* client_data_cb;
+        CallbackBridge* client_data_cb;
         int client_data_len;
 
         std::vector<TcpSocket> client_sockets;

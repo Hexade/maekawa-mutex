@@ -1,7 +1,8 @@
 #include "config.h"
 #include "connection_manager.h"
 #include "constants.h"
-#include "sock_data_cb.h"
+#include "maekawa.h"
+#include "callback_bridge.h"
 #include "tcp_server.h"
 #include "tcp_socket.h"
 #include "utils.h"
@@ -124,7 +125,7 @@ void run_server(int port)
 {
     // init callbacks
     SimpleMessage client_data;
-    SockDataCb client_sock_cb;
+    CallbackBridge client_sock_cb;
     client_sock_cb.subscribe(&on_client_data, &client_data);
 
     // start TCP server
