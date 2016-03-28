@@ -7,9 +7,6 @@
 class Registry
 {
     public:
-        ~Registry()
-        {}
-
         static Registry& instance(void);
 
         //file ops
@@ -37,8 +34,10 @@ class Registry
     private:
         Registry()
         { }
+        ~Registry()
+        {}
 
-        static Registry* instance_;
+        static Registry instance_;
 
         std::map<std::string, int> seek_positions;
 

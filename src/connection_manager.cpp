@@ -1,17 +1,30 @@
 #include "connection_manager.h"
 
+#define CONN_WAIT_TIMEOUT 10000 // 10 milliseconds
+
+#include <unistd.h>
+
 ConnectionManager::ConnectionManager(std::vector<TcpConfig>& cfgs)
-            : configs(cfgs)
 {
     for (auto& cfg: cfgs) {
        connections.emplace_back(cfg.number, cfg.port, cfg.host);
     }
 }
 
+void ConnectionManager::init(std::vector<TcpConfig>& cfgs)
+{
+    for (auto& cfg: cfgs) {
+       connections.emplace_back(cfg.number, cfg.port, cfg.host);
+    }
+}
+
+//blocking function; waits till all the connections are successfull
 void ConnectionManager::connect_all(void)
 {
     for (auto& conn: connections) {
-        conn.connect();
+        while (!conn.connect()) {
+            usleep(CONN_WAIT_TIMEOUT);
+        }
     }
 }
 
@@ -19,8 +32,7 @@ bool ConnectionManager::connect(int id)
 {
     for (auto& conn: connections) {
         if (conn.getId() == id) {
-            conn.connect();
-            return true;
+            return conn.connect();
         }
     }
     return false;

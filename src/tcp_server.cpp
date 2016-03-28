@@ -47,7 +47,7 @@ void TcpServer::start(void) throw (Exception)
                 it = client_sockets.erase(it);
             } else {
                 // callback to indicate client data is available
-                client_data_cb->on_data_read(socket);
+                client_data_cb->on_sock_data_bridge(socket);
                 ++it;
             }
         }

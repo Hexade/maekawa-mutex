@@ -59,7 +59,7 @@ class TcpSocket
         ~TcpSocket() throw (Exception);
         
         // socket API wrappers
-        void connect(void) throw (Exception);
+        bool connect(void) throw (Exception);
         void bind(void) throw (Exception);
         void listen(int req_q_len) throw (Exception);
         void accept(TcpSocket& client_socket) throw (Exception);
