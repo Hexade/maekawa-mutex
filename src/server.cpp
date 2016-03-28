@@ -19,7 +19,7 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg, SIMPLE_MSG_TY
 static TcpConfig my_conf;
 static vector<TcpConfig> other_servers;
 static string server_file;
-static ConnectionManager* server_connections;
+ConnectionManager server_connections;
 
 int main(int argc, char* argv[])
 {
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
         Utils::print_error("unable to read config");
         exit(EXIT_FAILURE);
     }
-    server_connections = new ConnectionManager(other_servers);
+    server_connections.init(other_servers);
 
     // init callbacks
     SimpleMessage client_data;
@@ -75,8 +75,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
    
-    server_connections->close_all();
-    delete server_connections; 
+    server_connections.close_all();
     return 0;
 }
 
@@ -158,9 +157,13 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
     const Connection* conn;
     for (auto& cfg: other_servers) {
         try {
-            conn = server_connections->get(cfg.number);
-            if (!conn->is_active())
-                server_connections->connect(cfg.number);
+            conn = server_connections.get(cfg.number);
+            if (!conn)
+                continue;
+            if (!conn->is_active()) {
+                if (!server_connections.connect(cfg.number))
+                    throw Exception("connection failed", true);
+            }
 
             conn->send(c_data, sizeof(SimpleMessage));
             conn->receive(&reply_msg, sizeof(SimpleMessage));

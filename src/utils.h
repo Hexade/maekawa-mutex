@@ -3,6 +3,9 @@
 
 #include "exception.h"
 
+#include <errno.h>
+#include <string.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -11,11 +14,13 @@
 class Utils
 {
     public:
-        static void inline print_error(std::string msg)
+        static void print_error(std::string msg, bool use_errno = false);
+
+        static void inline print_info(std::string msg)
         {
-            std::cerr << "error: " << msg << std::endl;
+            std::cout << "INFO: " << msg << std::endl;
         }
-    
+
         static int str_to_int(std::string val_str) throw (Exception);
 
         static std::vector<std::string> split_str(std::string str,

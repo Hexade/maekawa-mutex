@@ -24,7 +24,9 @@ class Connection : public TcpSocket
 class ConnectionManager
 {
     public:
+        ConnectionManager() {}
         ConnectionManager(std::vector<TcpConfig>& cfgs);
+        void init(std::vector<TcpConfig>& cfgs);
         void connect_all(void);
         bool connect(int id);
         void close_all(void);
@@ -33,7 +35,6 @@ class ConnectionManager
         inline const std::vector<Connection>& get_all() { return connections; }
 
     private:
-        std::vector<TcpConfig>& configs;
         std::vector<Connection> connections;
 };
 

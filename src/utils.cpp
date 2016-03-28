@@ -5,6 +5,13 @@
 #include <sstream>
 #include <string.h>
 
+void Utils::print_error(std::string msg, bool use_errno)
+{
+    if (use_errno)
+        msg.append(strerror(errno));
+    std::cerr << "error: " << msg << std::endl;
+}
+
 int Utils::str_to_int(std::string val_str)
     throw (Exception)
 {

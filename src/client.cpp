@@ -41,13 +41,17 @@ int main(int argc, char* argv[])
         Utils::print_error("unable to read server config");
         exit(EXIT_FAILURE);
     }
-        
+ 
     // configure quorum
     if (!configure_quorum(Utils::str_to_int(argv[1]))) 
         exit(EXIT_FAILURE);
 
     // spawn server thread 
     thread server_thread(run_server, my_conf.port);
+
+    // setup connections with quorum peers
+    Maekawa::instance().init(quorum_peers);
+    cout << "INFO: quorum initialized" << endl;
 
     // init socket data
     SimpleMessage send_data;
@@ -59,6 +63,7 @@ int main(int argc, char* argv[])
     // create server connections
     ConnectionManager server_connections(server_config.get_all());
     server_connections.connect_all();
+    cout << "INFO: Connection established with all the servers" << endl;
 
     // seed for random number
     srand(time(NULL));
@@ -78,13 +83,13 @@ int main(int argc, char* argv[])
 
         // send request to server
         const Connection* conn = server_connections.get(server_num);
-        try {
+        try {/*
             SimpleMessage server_reply;
             ReplyMessage* recv_data = &server_reply.payload.reply_m;
             conn->send(&send_data, sizeof(SimpleMessage));
             conn->receive(&server_reply, sizeof(SimpleMessage));
             cout << "Server " << recv_data->server_num
-                << " :: " << recv_data->message << endl;
+                << " :: " << recv_data->message << endl;*/
         } catch (Exception ex) {    
             Utils::print_error(ex.what());
         }

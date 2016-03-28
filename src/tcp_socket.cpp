@@ -1,4 +1,5 @@
 #include "tcp_socket.h"
+#include "utils.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -49,8 +50,10 @@ void TcpSocket::init(bool isIpAddrAny) throw (Exception)
     } else {
         // get host's DNS entry
         host_entry = gethostbyname(host.c_str());
-        if (!host_entry)
+        if (!host_entry) {
+            close();
             throw Exception("no such host " + host, true);
+        }
         
         memcpy((char *)&host_addr.sin_addr.s_addr, host_entry->h_addr,
             host_entry->h_length);
@@ -62,15 +65,19 @@ void TcpSocket::init(bool isIpAddrAny) throw (Exception)
 
 // connect to a host. 
 // used by client modules.
-void TcpSocket::connect(void) throw (Exception)
+bool TcpSocket::connect(void) throw (Exception)
 {
     // initialize socket
     init();
 
     int success = ::connect(sock_fd, (struct sockaddr *)&host_addr,
         sizeof(host_addr));
-    if (success < 0)
-        throw Exception("unable to connect to host", true);
+    if (success < 0) {
+        close();
+        return false;
+    }
+    else
+        return true;
 }
 
 // bind the socket to an ip address
@@ -82,16 +89,20 @@ void TcpSocket::bind(void) throw (Exception)
 
     int success = ::bind(sock_fd, (struct sockaddr *)&host_addr,
         sizeof(host_addr));
-    if (success < 0)
+    if (success < 0) {
+        close();
         throw Exception("unable to bind to host address", true);
+    }
 }
 
 // listen for requests on the specified ports
 void TcpSocket::listen(int req_q_len) throw (Exception)
 {
     int success = ::listen(sock_fd, req_q_len);
-    if (success < 0)
+    if (success < 0) {
+        close();
         throw Exception("could not initiate listen", true);
+    }
 }
 
 // accept requests from client and create client socket
