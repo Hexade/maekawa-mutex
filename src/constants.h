@@ -66,12 +66,13 @@ enum SIMPLE_MSG_TYPE {
 
 enum MAEKAWA_MSG_TYPE {
     REQUEST,
+    // REPLY denotes GRANT
     REPLY,
     RELEASE,
     ENQUIRE,
     FAIL,
     YIELD,
-    GRANT
+    NONE
 };
 
 // macros

@@ -14,7 +14,7 @@ obj/client.o: src/client.cpp
 	g++ -Wall -pthread -std=c++11 -c src/client.cpp -o obj/client.o
 
 obj/maekawa.o: src/maekawa.h src/maekawa.cpp
-	g++ -Wall -c src/maekawa.cpp -o obj/maekawa.o
+	g++ -Wall -std=c++11 -c src/maekawa.cpp -o obj/maekawa.o
 
 obj/server.o: src/server.cpp
 	g++ -Wall -std=c++11 -c src/server.cpp -o obj/server.o

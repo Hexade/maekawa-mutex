@@ -25,6 +25,7 @@ bool configure_quorum(int client_num);
 void run_server(int port);
 void do_terminate(Config& cfg);
 void on_client_data(void* data, TcpSocket* c_sock);
+void on_client_data_async(void* data, TcpSocket* c_sock);
 
 int main(int argc, char* argv[])
 {
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
     thread server_thread(run_server, my_conf.port);
 
     // setup connections with quorum peers
-    Maekawa::instance().init(quorum_peers);
+    Maekawa::instance().init(quorum_peers, my_conf.number);
     cout << "INFO: quorum initialized" << endl;
 
     // init socket data
@@ -83,13 +84,13 @@ int main(int argc, char* argv[])
 
         // send request to server
         const Connection* conn = server_connections.get(server_num);
-        try {/*
+        try {
             SimpleMessage server_reply;
             ReplyMessage* recv_data = &server_reply.payload.reply_m;
             conn->send(&send_data, sizeof(SimpleMessage));
             conn->receive(&server_reply, sizeof(SimpleMessage));
             cout << "Server " << recv_data->server_num
-                << " :: " << recv_data->message << endl;*/
+                << " :: " << recv_data->message << endl;
         } catch (Exception ex) {    
             Utils::print_error(ex.what());
         }
@@ -148,6 +149,15 @@ void run_server(int port)
 
 void on_client_data(void* data, TcpSocket* c_sock)
 {
+    thread t_proc_msg(on_client_data_async, data, c_sock);
+}
+
+void on_client_data_async(void* data, TcpSocket* c_sock)
+{
+    SimpleMessage* s_message = (SimpleMessage*)data;
+    if (MAEKAWA == s_message->msg_t)
+        Maekawa::instance().process_message(s_message);
+    c_sock->send(data, sizeof(SimpleMessage));
 }
 
 void do_terminate(Config& config)
