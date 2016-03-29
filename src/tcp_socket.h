@@ -40,8 +40,13 @@ struct WriteMessage {
     std::string to_string();
 };
 
-union SimpleMessagePayload {
+struct MaekawaMessage {
     MAEKAWA_MSG_TYPE maekawa_t;
+    int id;
+};
+
+union SimpleMessagePayload {
+    MaekawaMessage maekawa_m;
     WriteMessage write_m;
     ReplyMessage reply_m;
 };
