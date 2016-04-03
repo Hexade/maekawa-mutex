@@ -37,6 +37,9 @@ const std::string FAIL_FILE_NOT_READABLE = " -- failure: file not readable";
 const std::string FAIL_FILE_NOT_WRITABLE = " -- failure: file not writable";
 const std::string FAIL_PEER_COMM = "failure: unknown exception while communincating to peers";
 
+const std::string SENT = "SENT";
+const std::string RECV = "RECV";
+
 // enums
 enum CMD_TYPE {
     E_CMD_NONE,
@@ -61,7 +64,9 @@ enum SIMPLE_MSG_TYPE {
     CONTROL,
     TEST_COMMIT,
     COMMIT,
-    MAEKAWA 
+    MAEKAWA,
+    PREP_TERM,
+    TERM
 };
 
 enum MAEKAWA_MSG_TYPE {
@@ -73,6 +78,16 @@ enum MAEKAWA_MSG_TYPE {
     FAIL,
     YIELD,
     NONE
+};
+
+const std::string MAEKAWA_MESSAGES[] = {
+    "REQUEST",
+    "REPLY",
+    "RELEASE",
+    "ENQUIRE",
+    "FAIL",
+    "YIELD",
+    "NONE"
 };
 
 // macros

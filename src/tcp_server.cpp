@@ -5,7 +5,7 @@ TcpServer::~TcpServer() throw (Exception)
     main_socket.close();
 }
 
-void TcpServer::start(void) throw (Exception)
+void TcpServer::run(void) throw (Exception)
 {
     // bind
     main_socket.bind();
@@ -19,7 +19,7 @@ void TcpServer::start(void) throw (Exception)
     FD_SET(main_socket.get_sock_fd(), &active_fd_set);
     max_fd = main_socket.get_sock_fd();
 
-    while (true) {
+    while (!do_terminate) {
         read_fd_set = active_fd_set;
 
         // wait for an input in one of the active sockets
@@ -65,5 +65,6 @@ void TcpServer::start(void) throw (Exception)
             client_sockets.push_back(new_socket);
         }
     }
+    main_socket.close();
 }
 

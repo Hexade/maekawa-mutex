@@ -14,7 +14,7 @@ class Connection : public TcpSocket
             : TcpSocket(port, host), id(id)
         { }
 
-        inline int getId(void) { return id; }
+        inline int getId(void) const { return id; }
 
     private:
         int id;
@@ -31,6 +31,12 @@ class ConnectionManager
         bool connect(int id);
         void close_all(void);
         const Connection* get(int id);
+        void wait_for_connections(void);
+        
+        inline void add(TcpConfig& cfg)
+        {
+            connections.emplace_back(cfg.number, cfg.port, cfg.host);
+        }
 
         inline const std::vector<Connection>& get_all() { return connections; }
 

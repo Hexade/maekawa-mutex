@@ -41,7 +41,8 @@ bool ConnectionManager::connect(int id)
 void ConnectionManager::close_all(void)
 {
     for (auto& conn: connections) {
-        conn.close();
+        if (conn.is_active())
+            conn.close();
     }
 }
 
@@ -52,4 +53,13 @@ const Connection* ConnectionManager::get(int id)
             return &conn;
     }
     return NULL;
+}
+
+void ConnectionManager::wait_for_connections(void)
+{
+    for (auto& conn: connections) {
+        while (!conn.is_active()) {
+            usleep(CONN_WAIT_TIMEOUT);
+        }
+    }
 }

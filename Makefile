@@ -20,28 +20,28 @@ obj/server.o: src/server.cpp
 	g++ -Wall -std=c++11 -c src/server.cpp -o obj/server.o
 
 obj/tcp_server.o: src/tcp_server.h src/tcp_server.cpp
-	g++ -Wall -c src/tcp_server.cpp -o obj/tcp_server.o
+	g++ -Wall -std=c++11 -c src/tcp_server.cpp -o obj/tcp_server.o
 
 obj/registry.o: src/registry.h src/registry.cpp
-	g++ -Wall -c src/registry.cpp -o obj/registry.o
+	g++ -Wall -std=c++11 -c src/registry.cpp -o obj/registry.o
 
 obj/callback_bridge.o: src/callback_bridge.h src/callback_bridge.cpp
-	g++ -Wall -c src/callback_bridge.cpp -o obj/callback_bridge.o
+	g++ -Wall -std=c++11 -c src/callback_bridge.cpp -o obj/callback_bridge.o
 
 obj/connection_manager.o: src/connection_manager.h src/connection_manager.cpp
 	g++ -Wall -std=c++11 -c src/connection_manager.cpp -o obj/connection_manager.o
 
 obj/tcp_socket.o: src/tcp_socket.h src/tcp_socket.cpp
-	g++ -Wall -c src/tcp_socket.cpp -o obj/tcp_socket.o
+	g++ -Wall -std=c++11 -c src/tcp_socket.cpp -o obj/tcp_socket.o
 
 obj/config.o: src/config.h src/config.cpp
-	g++ -Wall -c src/config.cpp -o obj/config.o
+	g++ -Wall -std=c++11 -c src/config.cpp -o obj/config.o
 
 obj/exception.o: src/exception.h src/exception.cpp
-	g++ -Wall -c src/exception.cpp -o obj/exception.o
+	g++ -Wall -std=c++11 -c src/exception.cpp -o obj/exception.o
 
 obj/utils.o: src/utils.h src/utils.cpp
-	g++ -Wall -c src/utils.cpp -o obj/utils.o
+	g++ -Wall -std=c++11 -c src/utils.cpp -o obj/utils.o
 
 bin/server.config:
 	cp server.config bin/
