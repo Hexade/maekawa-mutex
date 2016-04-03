@@ -1,9 +1,14 @@
 #include "utils.h"
 
+#include "constants.h"
+
 #include <fstream>
 #include <iterator>
+#include <mutex>
 #include <sstream>
 #include <string.h>
+
+std::mutex Utils::file_mutex;
 
 void Utils::print_error(std::string msg, bool use_errno)
 {
@@ -88,5 +93,17 @@ std::vector<int> Utils::get_quorum_peer_nums(std::string filename, int client_nu
         quorum_peers.push_back(peer_num);
     }
     return quorum_peers;
+}
+
+void Utils::log_message(int from, int to, int type, const std::string& dir)
+{
+    char fn[100];
+    int client_num = (SENT == dir) ? from : to;
+    sprintf(fn, "client%d.log", client_num);
+    std::lock_guard<std::mutex> lock(file_mutex);
+    std::ofstream ofs;
+    ofs.open(fn, std::ofstream::out | std::ofstream::app);
+    ofs << dir << " -- " << from << " : " << MAEKAWA_MESSAGES[type] << " : " << to << std::endl; 
+    ofs.close();
 }
 

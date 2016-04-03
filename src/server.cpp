@@ -15,11 +15,14 @@ void commit(SimpleMessage* c_data, ReplyMessage* r_msg);
 bool test_commit(SimpleMessage* c_data, ReplyMessage* r_msg);
 bool test_commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg);
 void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg, SIMPLE_MSG_TYPE msg_t);
+void do_terminate(void);
 
 static TcpConfig my_conf;
 static vector<TcpConfig> other_servers;
 static string server_file;
 ConnectionManager server_connections;
+static int sig_term_count = 0;
+static TcpServer* server_ptr;
 
 int main(int argc, char* argv[])
 {
@@ -64,18 +67,19 @@ int main(int argc, char* argv[])
 
     // start TCP server
     TcpServer server(my_conf.port, &client_sock_cb, sizeof(SimpleMessage));
+    server_ptr = &server;
     try {
         cout << "Started listening on " << my_conf.host
-            << ":" << my_conf.port;
+            << ":" << my_conf.port << endl;
         cout.flush();
-        server.start();
+        server.run();
     } catch (Exception ex) {
         Utils::print_error("server_main: "
             + string(ex.what()));
         exit(EXIT_FAILURE);
     }
-   
-    server_connections.close_all();
+ 
+    cout << "Bye :)" << endl; 
     return 0;
 }
 
@@ -106,6 +110,23 @@ void on_client_data(void* data, TcpSocket* c_sock)
 
         case COMMIT:
             commit(c_data, r_msg);
+            break;
+
+        case TERMINATE:
+            sig_term_count++;
+            if (NUM_OF_CLIENTS == sig_term_count) {
+                cout << "Preparing to terminate..." << endl;
+                do_terminate();
+            }
+            break;
+
+        case PREP_TERM:
+            cout << "Preparing to terminate..." << endl;
+            server_connections.close_all();
+            break;
+
+        case TERM:
+            server_ptr->terminate();
             break;
 
         default:
@@ -157,6 +178,9 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
     const Connection* conn;
     for (auto& cfg: other_servers) {
         try {
+            if (PREP_TERM == msg_t || TERM == msg_t)
+                c_data->msg_t = msg_t;
+            
             conn = server_connections.get(cfg.number);
             if (!conn)
                 continue;
@@ -178,3 +202,32 @@ void commit_peers(SimpleMessage* c_data, SimpleMessage& reply_msg,
     }
 }
 
+void do_terminate(void)
+{
+    SimpleMessage msg;
+    msg.msg_t = TERMINATE;
+    Config client_config(CLIENT_CONFIG_FILE);
+    try {
+        client_config.create();
+        TcpConfig tc = client_config.getTcpConfig(1);
+        TcpSocket conn(tc.port, tc.host);
+        conn.connect();
+        conn.send(&msg, sizeof(SimpleMessage));
+        conn.receive(&msg, sizeof(SimpleMessage));
+        
+        conn.close();
+    } catch (Exception ex) {
+        Utils::print_error("Error sending terminate signal: " 
+            + string(ex.what()));
+    }
+
+    // let the peer servers close their client connections
+    commit_peers(&msg, msg, PREP_TERM);
+
+    // let peers finish termination
+    commit_peers(&msg, msg, TERM);
+
+    // terminate myself
+    server_connections.close_all();
+    server_ptr->terminate();
+}

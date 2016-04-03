@@ -75,6 +75,8 @@ class TcpSocket
 
         inline bool is_active() const { return sock_fd > -1; }
         inline int get_sock_fd() const { return sock_fd; }
+        inline int get_port() const { return port; }
+        inline std::string get_host() const { return host; }
 
     private:
         std::string host;

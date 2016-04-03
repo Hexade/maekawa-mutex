@@ -4,21 +4,27 @@
 #include "callback_bridge.h"
 #include "config.h"
 #include "connection_manager.h"
+#include "safe_vector.h"
 
 #include <atomic>
 #include <mutex>
-#include <queue>
+#include <deque>
 
 class Maekawa
 {
     public:
         static Maekawa& instance(void);
         
-        void init(std::vector<TcpConfig>& quorumConfig, int id);
+        void init(Config* c, int id);
+        inline void close()
+        {
+            connections.close_all();
+        }
 
         void acquire_lock(void);
         void release_lock(void);
 
+        void broadcast_all(SIMPLE_MSG_TYPE type);
         void process_message(SimpleMessage* message);
 
         inline void subscribe_callbacks(CallbackBridge* cb)
@@ -32,40 +38,58 @@ class Maekawa
 
         void request_tokens(void);
         void release_tokens(void);
+        
         void process_request(MaekawaMessage* mm);
+        void process_reply(MaekawaMessage* mm);
         void process_release(MaekawaMessage* mm);
+        void process_fail(int id);
+        void process_enquire(MaekawaMessage* mm);
+        void process_yield(MaekawaMessage* mm);
+        
         void broadcast(MAEKAWA_MSG_TYPE message_type);
-        void send(int id, MAEKAWA_MSG_TYPE message_type);
+        void send(int id, SimpleMessage& message_type);
+        
         bool token_available(void);
 
-        // thread safe container wrappers
-        bool token_available_t_safe(void);
-        void add_token_t_safe(int id);
-        void remove_token_t_safe(int id);
-        unsigned int token_count_t_safe(void);
-        void remove_all_tokens_except(int id);
-
+        // thread_safe queue operations
         void push_request_t_safe(int id);
         void pop_request_t_safe(void);
-        int front_request_t_safe(void);
+        int get_front_request_t_safe(void);
+        unsigned int request_count_t_safe(void);
+        void last_request_front_t_safe(void);
+        bool second_req_front_t_safe(void);
+        void insert_request_t_safe(int id, int startIndex);
+        void print_requests_t_safe(void);
+
+        void print_state(void);
 
         static Maekawa instance_;
 
+        Config* config;
         int my_id;
-        std::vector<int> tokens;
+        int my_token_holder;
 
+        // available tokens
+        SafeVector<int> tokens;
         // request queue
-        std::queue<int> req_queue;
+        std::deque<int> requests;
+        // fail messages received; yet to receive a reply
+        SafeVector<int> fails;
+        // yields sent; yet to receive a reply
+        SafeVector<int> yields;
+        // fails sent or yields received;
+        // yet to send a reply
+        SafeVector<int> deferred;
 
         // mutex
-        std::mutex token_mutex;
-        std::mutex req_q_mutex;
+        std::mutex requests_mutex;
 
         CallbackBridge* cb_bridge; 
 
-        ConnectionManager quorum_connections;
+        ConnectionManager connections;
         unsigned int quorum_size;
-        
+
+        std::vector<int> quorum_peers;
 };
 
 #endif

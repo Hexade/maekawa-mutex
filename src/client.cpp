@@ -18,14 +18,11 @@
 
 using namespace std;
 
-static TcpConfig my_conf;
-static vector<TcpConfig> quorum_peers;
-
-bool configure_quorum(int client_num);
 void run_server(int port);
-void do_terminate(Config& cfg);
 void on_client_data(void* data, TcpSocket* c_sock);
-void on_client_data_async(void* data, TcpSocket* c_sock);
+void on_client_data_async(SimpleMessage s_message, TcpSocket* c_sock);
+static TcpServer* server_ptr;
+static bool do_terminate = false;
 
 int main(int argc, char* argv[])
 {
@@ -44,14 +41,26 @@ int main(int argc, char* argv[])
     }
  
     // configure quorum
-    if (!configure_quorum(Utils::str_to_int(argv[1]))) 
+    TcpConfig my_conf;
+    Config client_config(CLIENT_CONFIG_FILE);
+    int client_num = Utils::str_to_int(argv[1]);
+    try {
+        client_config.create();
+
+        if (client_num > NUM_OF_CLIENTS)
+            throw Exception("Undefined client number");        
+        my_conf = client_config.getTcpConfig(client_num);
+
+    } catch (...) {
+        Utils::print_error("unable to configure quorum");
         exit(EXIT_FAILURE);
+    }
 
     // spawn server thread 
     thread server_thread(run_server, my_conf.port);
 
     // setup connections with quorum peers
-    Maekawa::instance().init(quorum_peers, my_conf.number);
+    Maekawa::instance().init(&client_config, my_conf.number);
     cout << "INFO: quorum initialized" << endl;
 
     // init socket data
@@ -87,8 +96,12 @@ int main(int argc, char* argv[])
         try {
             SimpleMessage server_reply;
             ReplyMessage* recv_data = &server_reply.payload.reply_m;
+
+            Maekawa::instance().acquire_lock();
             conn->send(&send_data, sizeof(SimpleMessage));
             conn->receive(&server_reply, sizeof(SimpleMessage));
+            Maekawa::instance().release_lock();
+
             cout << "Server " << recv_data->server_num
                 << " :: " << recv_data->message << endl;
         } catch (Exception ex) {    
@@ -97,34 +110,29 @@ int main(int argc, char* argv[])
         seq_num++;
     }
 
+    cout << "Preparing to terminate..." << endl;
+ 
+    // send completion status
+    const Connection* conn = server_connections.get(1);
+    send_data.msg_t = TERMINATE;
+    try {
+        Maekawa::instance().acquire_lock();
+        conn->send(&send_data, sizeof(SimpleMessage));
+        conn->receive(&send_data, sizeof(SimpleMessage));
+        Maekawa::instance().release_lock();
+    } catch (Exception ex) {    
+        // igonre exception; Utils::print_error(ex.what());
+    }
+
+    while (!do_terminate) {
+        usleep(10000);  // 10 milliseconds
+    }
+    
     server_connections.close_all();
     server_thread.join();
 
+    cout << "Bye :)" << endl;
     return 0;
-}
-
-bool configure_quorum(int client_num)
-{
-    bool success = true;
-    Config client_config(CLIENT_CONFIG_FILE);
-    try {
-        client_config.create();
-
-        if (client_num > NUM_OF_CLIENTS)
-            throw Exception("Undefined client number");        
-        my_conf = client_config.getTcpConfig(client_num);
-
-        vector<int> quorum_peer_nums = Utils::get_quorum_peer_nums(
-                                QUORUM_CONFIG_FILE, client_num);
-        for (auto& peer_id: quorum_peer_nums) {
-            quorum_peers.push_back(client_config.getTcpConfig(peer_id));
-        }
-    } catch (...) {
-        Utils::print_error("unable to configure quorum");
-        success = false;
-    }
-   
-    return success;
 }
 
 void run_server(int port)
@@ -136,48 +144,57 @@ void run_server(int port)
 
     // start TCP server
     TcpServer server(port, &client_sock_cb, sizeof(SimpleMessage));
+    server_ptr = &server;
     try {
         cout << "Started listening on port " << port << endl;
         cout.flush();
-        server.start();
+        server.run();
     } catch (Exception ex) {
         Utils::print_error("server_main: "
             + string(ex.what()));
         exit(EXIT_FAILURE);
-    }    
+    }
 }
 
 void on_client_data(void* data, TcpSocket* c_sock)
 {
-    thread t_proc_msg(on_client_data_async, data, c_sock);
-}
+    SimpleMessage s_message = *((SimpleMessage*)data);
+    //thread (on_client_data_async, message, c_sock).detach();
 
-void on_client_data_async(void* data, TcpSocket* c_sock)
-{
-    SimpleMessage* s_message = (SimpleMessage*)data;
-    if (MAEKAWA == s_message->msg_t)
-        Maekawa::instance().process_message(s_message);
-    c_sock->send(data, sizeof(SimpleMessage));
-}
+    switch (s_message.msg_t) {
+        case MAEKAWA:
+            Maekawa::instance().process_message(&s_message);
+            break;
 
-void do_terminate(Config& config)
-{
-    SockData sig_term;
-    sig_term.msg_t = CLIENT_TO_SERVER;
-    sig_term.cmd_t = E_CMD_TERMINATE;
+        case TERMINATE:
+            Maekawa::instance().broadcast_all(PREP_TERM);
+            Maekawa::instance().broadcast_all(TERM);
+            Maekawa::instance().close();
+            do_terminate = true;
+            server_ptr->terminate();
+            break;
 
-    for (int i = 1; i <= NUM_OF_SERVERS; ++i) {
-        TcpConfig cfg = config.getTcpConfig(i);
-        TcpSocket tcp_client(cfg.port, cfg.host);
-        try {
-            ReplyMessage recv_data;
-            tcp_client.connect();
-            tcp_client.send(&sig_term, sizeof(SockData));
-            tcp_client.receive(&recv_data, sizeof(ReplyMessage));
-            tcp_client.close();
-        } catch (Exception ex) {
-            // ignore errorrs;
-        }
+        case PREP_TERM:
+            Maekawa::instance().close();
+            break;
+
+        case TERM:
+            do_terminate = true;
+            server_ptr->terminate();
+            break;
+
+        default:
+            break;
     }
+   
+    c_sock->send(&s_message, sizeof(SimpleMessage));
+}
+
+// deprecated: asynchronous poses problems while using deadlock avoidance
+void on_client_data_async(SimpleMessage s_message, TcpSocket* c_sock)
+{
+    if (MAEKAWA == s_message.msg_t)
+        Maekawa::instance().process_message(&s_message);
+    c_sock->send(&s_message, sizeof(SimpleMessage));
 }
 
