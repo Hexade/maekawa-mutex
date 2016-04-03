@@ -56,6 +56,11 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    // create log file
+    char fn[100];
+    sprintf(fn, "client%d.log", client_num);
+    std::ofstream ofs(fn);
+
     // spawn server thread 
     thread server_thread(run_server, my_conf.port);
 
