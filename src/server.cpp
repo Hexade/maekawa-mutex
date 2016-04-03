@@ -32,9 +32,9 @@ int main(int argc, char* argv[])
     }
 
     // set server file name
-    server_file = "out_server";
+    server_file = "server";
     server_file.append(argv[1]);
-    server_file.append(".txt");
+    server_file.append(".out");
     Registry::instance().add_file(server_file);
 
     // read config

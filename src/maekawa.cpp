@@ -406,9 +406,11 @@ void Maekawa::print_requests_t_safe(void)
 
 void Maekawa::print_state(void)
 {
+    /*
     tokens.print("tokens", my_id);
     fails.print("fails", my_id);
     yields.print("yields", my_id);
     deferred.print("deferred", my_id);
     print_requests_t_safe();
+    */
 }

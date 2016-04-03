@@ -103,7 +103,7 @@ void Utils::log_message(int from, int to, int type, const std::string& dir)
     std::lock_guard<std::mutex> lock(file_mutex);
     std::ofstream ofs;
     ofs.open(fn, std::ofstream::out | std::ofstream::app);
-    ofs << dir << " -- " << from << " : " << MAEKAWA_MESSAGES[type] << " : " << to << std::endl; 
+    ofs << dir << " -- " << from << " -> " << MAEKAWA_MESSAGES[type] << " -> " << to << std::endl; 
     ofs.close();
 }
 
