@@ -60,6 +60,14 @@ int main(int argc, char* argv[])
     char fn[100];
     sprintf(fn, "client%d.log", client_num);
     std::ofstream ofs(fn);
+    ofs.close();
+
+    // create stats file
+    char fns[100];
+    sprintf(fns, "stats%d.log", client_num);
+    std::ofstream ofs_stats;
+    ofs_stats.open(fns);
+    ofs_stats.close();
 
     // spawn server thread 
     thread server_thread(run_server, my_conf.port);
@@ -101,19 +109,48 @@ int main(int argc, char* argv[])
         try {
             SimpleMessage server_reply;
             ReplyMessage* recv_data = &server_reply.payload.reply_m;
+        
+            // write stats
+            ofs_stats.open(fns, std::ofstream::out | std::ofstream::app);
+            ofs_stats << "Write number " << seq_num << endl;
 
+            clock_t begin = clock();
             Maekawa::instance().acquire_lock();
+            clock_t end = clock();
+
+            // messages
+            int* sent_msgs = Maekawa::instance().get_session_sends();
+            int* recv_msgs = Maekawa::instance().get_session_recvs();
+            for (int i = 0; i < NONE; ++i) {
+                ofs_stats << MAEKAWA_MESSAGES[i] << ": " << "Sent - "
+                        << sent_msgs[i] << ", " << "Recv - "
+                        << recv_msgs[i] << endl;
+            }
+
+            // time elapsed
+            double time_elapsed = (double(end - begin) / CLOCKS_PER_SEC) * 1000;
+            ofs_stats << "Time elapsed: " << time_elapsed << " milliseconds" << endl;
+            ofs_stats << endl;
+            ofs_stats.close();
+            
             conn->send(&send_data, sizeof(SimpleMessage));
             conn->receive(&server_reply, sizeof(SimpleMessage));
             Maekawa::instance().release_lock();
 
-            cout << "Server " << recv_data->server_num
+            cout << seq_num <<  ": Server " << recv_data->server_num
                 << " :: " << recv_data->message << endl;
         } catch (Exception ex) {    
             Utils::print_error(ex.what());
         }
         seq_num++;
     }
+
+    ofs_stats.open(fns, std::ofstream::out | std::ofstream::app);
+    ofs_stats << "---------------------------------------------------------" << endl;
+    ofs_stats << "Total messages sent: " << Maekawa::instance().get_sent_message_count() << endl;
+    ofs_stats << "Total messages received: " << Maekawa::instance().get_recv_message_count() << endl;
+    ofs_stats << "---------------------------------------------------------" << endl;
+    ofs_stats.close();        
 
     cout << "Preparing to terminate..." << endl;
  
