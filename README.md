@@ -1,35 +1,58 @@
-# distributed-files
-AOS project 1
+# AOS project 2
+Maekawa's Distributed Mutual Exclusion Algorithm
 
-Build:
+Platform:
+ - OS: Unix
+ - Compiler: g++ 4.8.5
 
-1. unzip distributed-banking.zip
-2. cd to distributed-banking/
+To Build:
+1. unzip maekawa-mutex.zip
+2. cd to maekawa-mutex/
 3. run make
-4. run ./install
 
-Run:
-To run Server1
-    -- log into dc14.utdallas.edu
-    -- cd to distributed-banking/appspace/server1/
-    -- run ./server 1
+To Run:
+To run ServerX
+    -- log into dc1X.utdallas.edu
+    -- cd to maekawa-mutex/bin/
+    -- run ./server X
 
-To run Server2
-    -- log into dc21.utdallas.edu
-    -- cd to distributed-banking/appspace/server2/
-    -- run ./server 2
+To run ClientX
+    -- log into dc3X.utdallas.edu
+    -- cd to maekawa-mutex/bin/
+    -- run ./client X
 
-To run Server1
-    -- log into dc19.utdallas.edu
-    -- cd to distributed-banking/appspace/server3/
-    -- run ./server 3
-
-To run client
-    -- log into dcXX.utdallas.edu
-    -- cd to distributed-banking/appspace/client/
-    -- run ./client
-
+Output and logs:
+ - serverX.out -- server X's output
+ - statsX.log -- client X's message stats and elapsed time for aquiring critical section access
+ - clientX.log -- client X's communication history
 
 NOTE:
-The hosts mentioned in the run instructions are for those specified in server.config.
-The host configuration can be changed by modifying 'server.config'
+1. The hosts mentioned in the run instructions are for those specified in server.config and client.config.
+2. The host configuration for servers and clients can be changed by modifying 'server.config' and 'client.config' respectively.
+
+Source files:
+    callback_bridge.h
+    config.h
+    connection_manager.h
+    constants.h
+    exception.h
+    maekawa.h
+    registry.h
+    safe_vector.h
+    tcp_server.h
+    tcp_socket.h
+    utils.h
+    callback_bridge.cpp
+    client.cpp
+    config.cpp
+    connection_manager.cpp
+    exception.cpp
+    maekawa.cpp
+    registry.cpp
+    server.cpp
+    tcp_server.cpp
+    tcp_socket.cpp
+    utils.cpp
+    safe_vector.tpp
+
+
