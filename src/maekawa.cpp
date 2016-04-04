@@ -8,7 +8,7 @@
 #include <iostream>
 
 //TODO: tune this
-#define TOKEN_WAIT_SLEEP 500 // 0.5 milliseconds
+#define TOKEN_WAIT_SLEEP 1000 // 1 millisecond
 
 Maekawa Maekawa::instance_;
 
