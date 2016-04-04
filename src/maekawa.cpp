@@ -8,7 +8,7 @@
 #include <iostream>
 
 //TODO: tune this
-#define TOKEN_WAIT_SLEEP 5000 // 5 milliseconds
+#define TOKEN_WAIT_SLEEP 500 // 0.5 milliseconds
 
 Maekawa Maekawa::instance_;
 
@@ -42,6 +42,12 @@ void Maekawa::init(Config* c, int id)
 
 void Maekawa::acquire_lock(void)
 {
+    // reset stats
+    for (int i = 0; i < NONE; ++i) {
+        session_sends[i] = 0;
+        session_recvs[i] = 0;
+    }
+
     // add my own request to request
     // to indicate that my token is not available
     // when I am in critical section
@@ -111,6 +117,12 @@ void Maekawa::process_message(SimpleMessage* message)
     int id = mm->id;
     Utils::log_message(id, my_id, mm->maekawa_t, RECV);
     print_state();
+
+    // stats
+    if (mm->maekawa_t != NONE) {
+        session_recvs[mm->maekawa_t]++;
+        recv_messages++;
+    }
     
     switch (mm->maekawa_t) {
         case REQUEST:
@@ -132,6 +144,13 @@ void Maekawa::process_message(SimpleMessage* message)
         default:
             break;
     }
+
+    // stats
+    if (mm->maekawa_t != NONE) {
+        session_sends[mm->maekawa_t]++;
+        sent_messages++;
+    }
+
     Utils::log_message(my_id, id, mm->maekawa_t, SENT);
     print_state();
 }
@@ -300,6 +319,12 @@ void Maekawa::broadcast(MAEKAWA_MSG_TYPE message_type)
         mm->maekawa_t = message_type;
         mm->id = my_id; 
 
+        // stats
+        if (mm->maekawa_t != NONE) {
+            session_sends[mm->maekawa_t]++;
+            sent_messages++;
+        }
+
         conn->send(&message, sizeof(SimpleMessage));
         Utils::log_message(my_id, peer, mm->maekawa_t, SENT);
         print_state();
@@ -313,6 +338,12 @@ void Maekawa::broadcast(MAEKAWA_MSG_TYPE message_type)
         else if (FAIL == mm->maekawa_t)
             process_fail(mm->id);
 
+        // stats
+        if (mm->maekawa_t != NONE) {
+            session_recvs[mm->maekawa_t]++;
+            recv_messages++;
+        }
+    
         print_state();
     }
 }
@@ -323,13 +354,13 @@ void Maekawa::send(int id, SimpleMessage& message)
     message.msg_t = MAEKAWA;
     MaekawaMessage* mm = &message.payload.maekawa_m;
     mm->id = my_id;
-/*
-    // create a new connection if not connected
-    if (NULL == connections.get(id)) {
-        connections.add(config->getTcpConfig(id));
-        connections.connect(id);
+
+    // stats
+    if (mm->maekawa_t != NONE) {
+        session_sends[mm->maekawa_t]++;
+        sent_messages++;
     }
-*/
+
     const Connection* conn = connections.get(id);
     conn->send(&message, sizeof(SimpleMessage));
     Utils::log_message(my_id, id, mm->maekawa_t, SENT);
@@ -337,6 +368,12 @@ void Maekawa::send(int id, SimpleMessage& message)
 
     conn->receive(&message, sizeof(SimpleMessage));
     Utils::log_message(mm->id, my_id, mm->maekawa_t, RECV);
+
+    // stats
+    if (mm->maekawa_t != NONE) {
+        session_recvs[mm->maekawa_t]++;
+        recv_messages++;
+    }
 }
 
 bool Maekawa::token_available(void)

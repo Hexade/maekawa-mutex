@@ -32,6 +32,22 @@ class Maekawa
             cb_bridge = cb;
         }
 
+        inline int* get_session_sends(void)
+        {
+            return session_sends;
+        }
+
+        inline int* get_session_recvs(void)
+        {
+            return session_recvs;
+        }
+
+        inline int get_sent_message_count(void)
+        { return sent_messages; }
+
+        inline int get_recv_message_count(void)
+        { return recv_messages; }
+
     private:
         Maekawa() { }
         ~Maekawa() { }
@@ -90,6 +106,12 @@ class Maekawa
         unsigned int quorum_size;
 
         std::vector<int> quorum_peers;
+
+        // stats
+        int sent_messages;
+        int recv_messages;
+        int session_sends[NONE] = {0};
+        int session_recvs[NONE] = {0};
 };
 
 #endif
